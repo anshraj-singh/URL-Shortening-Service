@@ -6,8 +6,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-@Data
+
 @Document(collection = "urls")
+@Data
 public class UrlShortener {
 
     @Id
@@ -17,4 +18,36 @@ public class UrlShortener {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private int accessCount;
+
+    public String getUrl() {
+        return url;
+    }
+    public void setUrl(String url) {
+        this.url = url;
+    }
+    public String getShortCode() {
+        return shortCode;
+    }
+
+public void setShortCode(String shortCode) {
+    this.shortCode = shortCode;
+}
+public LocalDateTime getCreatedAt() {
+    return createdAt;
+}
+public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
+}
+public LocalDateTime getUpdatedAt() {
+    return updatedAt;
+}
+public void setUpdatedAt(LocalDateTime updatedAt) {
+    this.updatedAt = updatedAt;
+}
+public int getAccessCount() {
+    return accessCount;
+}
+public void setAccessCount(int accessCount) {
+    this.accessCount = accessCount;
+}
 }
