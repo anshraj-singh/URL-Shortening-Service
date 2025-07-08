@@ -3,10 +3,14 @@ package com.shorturl.urlshorteningservice.controller;
 
 import com.shorturl.urlshorteningservice.model.UrlShortener;
 import com.shorturl.urlshorteningservice.service.UrlShortenerService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
 
 
 @RestController
@@ -16,18 +20,21 @@ public class UrlShortenerController {
     @Autowired
     private UrlShortenerService urlShortenerService;
 
+    private static final String BASE_URL = "http://localhost:8080/shorten/"; // Change this to your production URL
     // Endpoint to create a short URL
     @PostMapping
     public ResponseEntity<UrlShortener> createShortUrl(@RequestBody String originalUrl) {
         UrlShortener createdUrl = urlShortenerService.createShortUrl(originalUrl);
         return new ResponseEntity<>(createdUrl, HttpStatus.CREATED);
     }
-    // Endpoint to get the original URL from a short code
+    // Endpoint to redirect to the original URL from a short code
     @GetMapping("/{shortCode}")
-    public ResponseEntity<UrlShortener> getOriginalUrl(@PathVariable String shortCode) {
-        UrlShortener urlShortener = urlShortenerService.getOriginalUrl(shortCode);
-        if (urlShortener != null) {
-            return new ResponseEntity<>(urlShortener, HttpStatus.OK);
+    public ResponseEntity<String> redirectToOriginalUrl(@PathVariable String shortCode) {
+        String originalUrl = urlShortenerService.getOriginalUrl(shortCode);
+        if (originalUrl != null) {
+            // Generate the full short URL
+            String fullShortUrl = BASE_URL + shortCode;
+            return ResponseEntity.ok(fullShortUrl); // Return the full short URL
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }

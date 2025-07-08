@@ -26,10 +26,16 @@ public class UrlShortenerService {
         urlShortener.setAccessCount(0); // Initialize access count to 0
         return urlShortenerRepository.save(urlShortener); // Save to the repository
     }
-
-    public UrlShortener getOriginalUrl(String shortCode) {
-        return urlShortenerRepository.findByShortCode(shortCode); // Retrieve the original URL by short code
+    public String getOriginalUrl(String shortCode) {
+        UrlShortener urlShortener = urlShortenerRepository.findByShortCode(shortCode); // Retrieve the original URL by short code
+        if (urlShortener != null) {
+            urlShortener.setAccessCount(urlShortener.getAccessCount() + 1); // Increment access count
+            urlShortenerRepository.save(urlShortener); // Update access count in the repository
+            return urlShortener.getUrl(); // Return the original URL as a string
+        }
+        return null; // Return null if not found
     }
+
 
     public UrlShortener updateShortUrl(String shortCode, String newUrl) {
         UrlShortener urlShortener = urlShortenerRepository.findByShortCode(shortCode);
