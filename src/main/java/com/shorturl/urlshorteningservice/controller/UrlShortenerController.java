@@ -1,6 +1,7 @@
 package com.shorturl.urlshorteningservice.controller;
 
 
+import com.shorturl.urlshorteningservice.model.UrlRequest;
 import com.shorturl.urlshorteningservice.model.UrlShortener;
 import com.shorturl.urlshorteningservice.service.UrlShortenerService;
 import org.slf4j.Logger;
@@ -11,34 +12,40 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 
 
 @RestController
-@RequestMapping("/shorten")
+@RequestMapping("/shorUrl")
 public class UrlShortenerController {
 
     @Autowired
     private UrlShortenerService urlShortenerService;
 
-    private static final String BASE_URL = "http://localhost:8080/shorten/"; // Change this to your production URL
-    // Endpoint to create a short URL
+    private static final Logger logger = LoggerFactory.getLogger(UrlShortenerController.class);    // Endpoint to create a short URL
+
     @PostMapping
-    public ResponseEntity<UrlShortener> createShortUrl(@RequestBody String originalUrl) {
+    public ResponseEntity<UrlShortener> createShortUrl(@RequestBody UrlRequest request) {
+        String originalUrl = request.getUrl();
         UrlShortener createdUrl = urlShortenerService.createShortUrl(originalUrl);
         return new ResponseEntity<>(createdUrl, HttpStatus.CREATED);
     }
-    // Endpoint to redirect to the original URL from a short code
+
+
     @GetMapping("/{shortCode}")
-    public ResponseEntity<String> redirectToOriginalUrl(@PathVariable String shortCode) {
+    public ResponseEntity<Void> redirectToOriginalUrl(@PathVariable String shortCode) {
+        logger.info("Fetching original URL for short code: {}", shortCode);
+
         String originalUrl = urlShortenerService.getOriginalUrl(shortCode);
         if (originalUrl != null) {
-            // Generate the full short URL
-            String fullShortUrl = BASE_URL + shortCode;
-            return ResponseEntity.ok(fullShortUrl); // Return the full short URL
+            logger.info("Redirecting to original URL: {}", originalUrl);
+            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(originalUrl)).build(); // Redirect to the original URL
         } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            logger.warn("Short code not found: {}", shortCode);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Return 404 if not found
         }
     }
+
 
     @PutMapping("/{shortCode}")
     public ResponseEntity<UrlShortener> updateShortUrl(@PathVariable String shortCode, @RequestBody String newUrl) {

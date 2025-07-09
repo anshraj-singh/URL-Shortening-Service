@@ -18,23 +18,35 @@ public class UrlShortenerService {
     private static final int SHORT_CODE_LENGTH = 6;
 
     public UrlShortener createShortUrl(String originalUrl) {
-        UrlShortener urlShortener = new UrlShortener();
-        urlShortener.setUrl(originalUrl); // Set the original URL
-        urlShortener.setShortCode(generateShortCode()); // Generate and set the short code
-        urlShortener.setCreatedAt(LocalDateTime.now()); // Set the creation timestamp
-        urlShortener.setUpdatedAt(LocalDateTime.now()); // Set the update timestamp
-        urlShortener.setAccessCount(0); // Initialize access count to 0
-        return urlShortenerRepository.save(urlShortener); // Save to the repository
-    }
-    public String getOriginalUrl(String shortCode) {
-        UrlShortener urlShortener = urlShortenerRepository.findByShortCode(shortCode); // Retrieve the original URL by short code
-        if (urlShortener != null) {
-            urlShortener.setAccessCount(urlShortener.getAccessCount() + 1); // Increment access count
-            urlShortenerRepository.save(urlShortener); // Update access count in the repository
-            return urlShortener.getUrl(); // Return the original URL as a string
+        // Fix missing protocol
+        if (!originalUrl.startsWith("http://") && !originalUrl.startsWith("https://")) {
+            originalUrl = "https://" + originalUrl;
         }
-        return null; // Return null if not found
+
+        UrlShortener urlShortener = new UrlShortener();
+        urlShortener.setUrl(originalUrl);
+        urlShortener.setShortCode(generateShortCode());
+        urlShortener.setCreatedAt(LocalDateTime.now());
+        urlShortener.setUpdatedAt(LocalDateTime.now());
+        urlShortener.setAccessCount(0);
+        return urlShortenerRepository.save(urlShortener);
     }
+
+    public String getOriginalUrl(String shortCode) {
+        UrlShortener url = urlShortenerRepository.findByShortCode(shortCode);
+        if (url == null) return null;
+
+        String originalUrl = url.getUrl();
+        if (originalUrl == null || !(originalUrl.startsWith("http://") || originalUrl.startsWith("https://"))) {
+            System.err.println("Invalid original URL: " + originalUrl); // debug log
+            return null;
+        }
+
+        url.setAccessCount(url.getAccessCount() + 1);
+        urlShortenerRepository.save(url);
+        return originalUrl;
+    }
+
 
 
     public UrlShortener updateShortUrl(String shortCode, String newUrl) {
