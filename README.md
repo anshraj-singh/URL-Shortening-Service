@@ -34,3 +34,11 @@ The `UrlShortener` entity represents the shortened URL details, including:
 - `updatedAt`: Timestamp for when the URL was last updated.
 - `accessCount`: Number of times the short URL has been accessed.
 
+## Changes update
+
+### 1. Error Handling
+- Added error handling in the `UrlShortenerController` class to manage exceptions and provide meaningful HTTP responses.
+- Each endpoint now logs errors and returns a 500 Internal Server Error response if an exception occurs.
+
+### 2. Logging
+- Enhanced logging to capture error messages for better debugging.
