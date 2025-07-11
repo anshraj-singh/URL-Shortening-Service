@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Short URL</title>
+    <style>
+        body {
+            background-color: #111;
+            font-family: Arial, sans-serif;
+            color: white;
+            text-align: center;
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            background-color: #1a1a1a;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 900px;
+            margin: 40px auto;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        h1 {
+            color: #00bfff;
+            margin-bottom: 5px;
+        }
+
+        p {
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            width: 60%;
+            border-radius: 10px;
+            border: none;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            background-color: #00bfff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 30px;
+            border-collapse: collapse;
+            color: white;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #333;
+        }
+
+        th {
+            background-color: #222;
+            cursor: pointer; /* Indicate sortable columns */
+        }
+
+        a {
+            color: #00ffcc;
+            text-decoration: none;
+        }
+
+        #loading {
+            display: none;
+            color: #00bfff;
+        }
+
+        @media (max-width: 600px) {
+            input[type="text"] {
+                width: 80%;
+            }
+
+            button {
+                width: 100%;
+                margin-top: 10px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Short URL</h1>
+    <p>Paste the URL to be shortened</p>
+
+    <input type="text" id="inputUrl" placeholder="Enter your long URL here">
+    <button onclick="shortenUrl()">Shorten URL</button>
+    <div id="loading">Shortening URL...</div>
+
+    <p>ShortURL is a free tool to shorten URLs and generate short links.<br>
+        URL shortener allows to create a shortened link making it easy to share.</p>
+
+    <table id="urlTable">
+        <thead>
+        <tr>
+            <th onclick="sortTable(0)">Original URL</th>
+            <th onclick="sortTable(1)">Short URL</th>
+            <th onclick="sortTable(2)">Created Date</th>
+            <th onclick="sortTable(3)">Clicks</th>
+            <th>Copy</th>
+        </tr>
+        </thead>
+        <tbody id="urlData">
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const API_BASE = "http://localhost:8080/shorUrl";
+
+    async function shortenUrl() {
+        const input = document.getElementById("inputUrl").value;
+        if (!input) return alert("Please enter a URL");
+
+        // URL validation
+        const urlPattern = /^(ftp|http|https):\/\/[^ "]+$/;
+        if (!urlPattern.test(input)) {
+            return alert("Please enter a valid URL starting with http:// or https://");
+        }
+
+        document.getElementById("loading").style.display = "block"; // Show loading
+
+        const res = await fetch(API_BASE, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: input })
+        });
+
+        document.getElementById("loading").style.display = "none"; // Hide loading
+
+        if (res.ok) {
+            const data = await res.json();
+            appendToTable(data);
+            document.getElementById("inputUrl").value = ""; // Clear input field
+        } else {
+            if (res.status === 400) {
+                alert("Invalid URL format. Please enter a valid URL.");
+            } else {
+                alert("Error shortening URL. Please try again.");
+            }
+        }
+    }
+
+    function appendToTable(data) {
+        const table = document.getElementById("urlData");
+        const row = document.createElement("tr");
+
+        const originalUrl = document.createElement("td");
+        originalUrl.textContent = data.url;
+
+        const shortUrl = document.createElement("td");
+        const shortLink = document.createElement("a");
+        const fullShortUrl = `${API_BASE}/${data.shortCode}`;
+        shortLink.href = fullShortUrl;
+        shortLink.target = "_blank";
+        shortLink.textContent = fullShortUrl;
+        shortLink.onclick = () => {
+            // Increment click count on the backend when the short URL is clicked
+            fetch(`${API_BASE}/${data.shortCode}/click`, { method: 'POST' });
+        };
+        shortUrl.appendChild(shortLink);
+
+        const createdDate = document.createElement("td");
+        createdDate.textContent = new Date(data.createdAt).toLocaleString();
+
+        const clicks = document.createElement("td");
+        fetch(`${API_BASE}/${data.shortCode}/stats`)
+            .then(res => res.json())
+            .then(stats => {
+                clicks.textContent = stats.accessCount;
+            })
+            .catch(() => {
+                clicks.textContent = "N/A";
+            });
+
+        const copyBtn = document.createElement("td");
+        const button = document.createElement("button");
+        button.textContent = "Copy";
+        button.onclick = () => {
+            navigator.clipboard.writeText(fullShortUrl);
+            button.textContent = "Copied!";
+            setTimeout(() => button.textContent = "Copy", 2000); // Reset text after 2 seconds
+            alert("Short URL copied to clipboard!");
+        };
+        copyBtn.appendChild(button);
+
+        row.appendChild(originalUrl);
+        row.appendChild(shortUrl);
+        row.appendChild(createdDate);
+        row.appendChild(clicks);
+        row.appendChild(copyBtn);
+        table.appendChild(row);
+    }
+
+    function sortTable(columnIndex) {
+        const table = document.getElementById("urlTable");
+        const rows = Array.from(table.rows).slice(1); // Exclude header row
+
+        rows.sort((a, b) => {
+            const aText = a.cells[columnIndex].textContent;
+            const bText = b.cells[columnIndex].textContent;
+            return aText.localeCompare(bText);
+        });
+
+        rows.forEach(row => table.appendChild(row)); // Reorder rows in the table
+    }
+</script>
+
+</body>
+</html>
