@@ -17,9 +17,11 @@
             background-color: #1a1a1a;
             border-radius: 20px;
             padding: 30px;
-            max-width: 900px;
+            max-width: 95%;
             margin: 40px auto;
             box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            overflow: hidden; /* Prevent overflow */
+            position: relative;
         }
 
         h1 {
@@ -34,10 +36,11 @@
 
         input[type="text"] {
             padding: 10px;
-            width: 60%;
+            width: 90%; /* Adjust width */
             border-radius: 10px;
             border: none;
             margin: 20px 0;
+            word-wrap: break-word;
         }
 
         button {
@@ -49,6 +52,11 @@
             font-weight: bold;
             cursor: pointer;
             margin-left: 10px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #00a3cc;
         }
 
         table {
@@ -56,21 +64,43 @@
             margin-top: 30px;
             border-collapse: collapse;
             color: white;
+            table-layout: fixed; /* Ensures proper layout */
         }
 
         th, td {
             padding: 12px;
             border: 1px solid #333;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 250px;
+            text-align: left;
+            white-space: normal; /* Ensure text wraps */
         }
 
         th {
             background-color: #222;
-            cursor: pointer; /* Indicate sortable columns */
+            cursor: pointer;
         }
 
-        a {
+        td a {
             color: #00ffcc;
             text-decoration: none;
+            word-break: break-all;
+            display: inline-block;
+            max-width: 100%; /* Prevent overflow */
+            overflow: hidden; /* Prevent overflow */
+            text-overflow: ellipsis; /* Truncate overflow */
+        }
+
+        td button {
+            background-color: #00bfff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        td button:hover {
+            background-color: #008cba;
         }
 
         #loading {
@@ -78,18 +108,24 @@
             color: #00bfff;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             input[type="text"] {
-                width: 80%;
+                width: 90%; /* Adjust for smaller screens */
+            }
+
+            table {
+                font-size: 12px;
+                display: block;
+                overflow-x: auto;
+            }
+
+            th, td {
+                min-width: 150px;
             }
 
             button {
                 width: 100%;
                 margin-top: 10px;
-            }
-
-            table {
-                font-size: 12px;
             }
         }
     </style>
@@ -125,18 +161,16 @@
 <script>
     const API_BASE = "https://url-shortening-service-production.up.railway.app/shorUrl"; // Update to your production URL
 
-
     async function shortenUrl() {
         const input = document.getElementById("inputUrl").value;
         if (!input) return alert("Please enter a URL");
 
-        // URL validation
         const urlPattern = /^(ftp|http|https):\/\/[^ "]+$/;
         if (!urlPattern.test(input)) {
             return alert("Please enter a valid URL starting with http:// or https://");
         }
 
-        document.getElementById("loading").style.display = "block"; // Show loading
+        document.getElementById("loading").style.display = "block";
 
         const res = await fetch(API_BASE, {
             method: 'POST',
@@ -144,12 +178,12 @@
             body: JSON.stringify({ url: input })
         });
 
-        document.getElementById("loading").style.display = "none"; // Hide loading
+        document.getElementById("loading").style.display = "none";
 
         if (res.ok) {
             const data = await res.json();
             appendToTable(data);
-            document.getElementById("inputUrl").value = ""; // Clear input field
+            document.getElementById("inputUrl").value = "";
         } else {
             if (res.status === 400) {
                 alert("Invalid URL format. Please enter a valid URL.");
@@ -173,7 +207,6 @@
         shortLink.target = "_blank";
         shortLink.textContent = fullShortUrl;
         shortLink.onclick = () => {
-            // Increment click count on the backend when the short URL is clicked
             fetch(`${API_BASE}/${data.shortCode}/click`, { method: 'POST' });
         };
         shortUrl.appendChild(shortLink);
@@ -197,7 +230,7 @@
         button.onclick = () => {
             navigator.clipboard.writeText(fullShortUrl);
             button.textContent = "Copied!";
-            setTimeout(() => button.textContent = "Copy", 2000); // Reset text after 2 seconds
+            setTimeout(() => button.textContent = "Copy", 2000);
             alert("Short URL copied to clipboard!");
         };
         copyBtn.appendChild(button);
@@ -212,7 +245,7 @@
 
     function sortTable(columnIndex) {
         const table = document.getElementById("urlTable");
-        const rows = Array.from(table.rows).slice(1); // Exclude header row
+        const rows = Array.from(table.rows).slice(1);
 
         rows.sort((a, b) => {
             const aText = a.cells[columnIndex].textContent;
@@ -220,7 +253,7 @@
             return aText.localeCompare(bText);
         });
 
-        rows.forEach(row => table.appendChild(row)); // Reorder rows in the table
+        rows.forEach(row => table.appendChild(row));
     }
 </script>
 
