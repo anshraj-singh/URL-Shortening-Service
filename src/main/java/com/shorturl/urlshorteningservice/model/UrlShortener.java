@@ -1,53 +1,44 @@
 package com.shorturl.urlshorteningservice.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
-
+import java.util.ArrayList;
+import java.util.List;
 
 @Document(collection = "urls")
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UrlShortener {
 
     @Id
     private String id;
-    private String url;
+
+    private String originalUrl;
+
+    @Indexed(unique = true)
     private String shortCode;
+
+    private String title;             // Optional page title / description
+    private String createdBy;         // Optional user/client identifier
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime expiresAt;  // Optional TTL for the short URL
+
     private int accessCount;
+    private boolean active;           // Soft-delete flag
 
-    public String getUrl() {
-        return url;
-    }
-    public void setUrl(String url) {
-        this.url = url;
-    }
-    public String getShortCode() {
-        return shortCode;
-    }
+    @Builder.Default
+    private List<String> tags = new ArrayList<>();  // Optional tags/labels
 
-public void setShortCode(String shortCode) {
-    this.shortCode = shortCode;
-}
-public LocalDateTime getCreatedAt() {
-    return createdAt;
-}
-public void setCreatedAt(LocalDateTime createdAt) {
-    this.createdAt = createdAt;
-}
-public LocalDateTime getUpdatedAt() {
-    return updatedAt;
-}
-public void setUpdatedAt(LocalDateTime updatedAt) {
-    this.updatedAt = updatedAt;
-}
-public int getAccessCount() {
-    return accessCount;
-}
-public void setAccessCount(int accessCount) {
-    this.accessCount = accessCount;
-}
+    private String lastAccessedAt;    // Last time this URL was accessed
 }
