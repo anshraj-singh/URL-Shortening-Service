@@ -6,9 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * Central error handler — converts exceptions into consistent JSON error responses.
- */
+//! Central error handler -> converts exceptions into consistent JSON error responses.
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -18,9 +16,9 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
-    @ExceptionHandler(UrlExpiredException.class)
-    public ResponseEntity<ApiResponse<Void>> handleExpired(UrlExpiredException ex) {
-        return ResponseEntity.status(HttpStatus.GONE)
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBadRequest(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
