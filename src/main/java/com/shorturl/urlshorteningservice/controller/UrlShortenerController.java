@@ -14,25 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 
-/**
- * REST controller for the URL Shortener service.
- *
- * ┌──────────┬──────────────────────────────┬──────────────────────┐
- * │ Method   │ Path                         │ Purpose              │
- * ├──────────┼──────────────────────────────┼──────────────────────┤
- * │ POST     │ /api/v1/urls                 │ Create short URL     │
- * │ GET      │ /r/{code}                    │ Redirect (browser)   │
- * │ GET      │ /api/v1/urls                 │ List all URLs        │
- * │ GET      │ /api/v1/urls/active          │ List active URLs     │
- * │ GET      │ /api/v1/urls/top             │ Top 10 clicked       │
- * │ GET      │ /api/v1/urls/{code}          │ Get URL info         │
- * │ GET      │ /api/v1/urls/{code}/stats    │ Click stats          │
- * │ PUT      │ /api/v1/urls/{code}          │ Update target URL    │
- * │ PATCH    │ /api/v1/urls/{code}/restore  │ Reactivate URL       │
- * │ DELETE   │ /api/v1/urls/{code}          │ Soft-delete URL      │
- * │ DELETE   │ /api/v1/urls/{code}/hard     │ Permanent delete     │
- * └──────────┴──────────────────────────────┴──────────────────────┘
- */
+
 @RestController
 @RequiredArgsConstructor
 @Slf4j
@@ -40,12 +22,6 @@ public class UrlShortenerController {
 
     private final UrlShortenerService service;
 
-    // ─── CREATE ──────────────────────────────────────────────────────────────
-
-    /**
-     * POST /api/v1/urls
-     * Body: { "url": "https://www.example.com" }
-     */
     @PostMapping("/api/v1/urls")
     public ResponseEntity<ApiResponse<UrlResponse>> createShortUrl(
             @RequestBody CreateUrlRequest request) {
@@ -55,12 +31,6 @@ public class UrlShortenerController {
                 .body(ApiResponse.success(response, "Short URL created successfully"));
     }
 
-    // ─── REDIRECT ────────────────────────────────────────────────────────────
-
-    /**
-     * GET /r/{code}
-     * Redirects to the original URL. Returns 302 Found.
-     */
     @GetMapping("/r/{code}")
     public ResponseEntity<Void> redirect(@PathVariable String code) {
         String originalUrl = service.resolveUrl(code);
@@ -68,8 +38,6 @@ public class UrlShortenerController {
                 .location(URI.create(originalUrl))
                 .build();
     }
-
-    // ─── READ ─────────────────────────────────────────────────────────────────
 
     @GetMapping("/api/v1/urls/{code}")
     public ResponseEntity<ApiResponse<UrlResponse>> getUrl(@PathVariable String code) {
@@ -98,12 +66,6 @@ public class UrlShortenerController {
         return ResponseEntity.ok(ApiResponse.success(service.getTopUrls(), "Top URLs fetched"));
     }
 
-    // ─── UPDATE ───────────────────────────────────────────────────────────────
-
-    /**
-     * PUT /api/v1/urls/{code}
-     * Body: { "newUrl": "https://www.new-destination.com" }
-     */
     @PutMapping("/api/v1/urls/{code}")
     public ResponseEntity<ApiResponse<UrlResponse>> updateUrl(
             @PathVariable String code,
@@ -112,14 +74,12 @@ public class UrlShortenerController {
         return ResponseEntity.ok(ApiResponse.success(service.updateShortUrl(code, request), "URL updated successfully"));
     }
 
-    // ─── PATCH ────────────────────────────────────────────────────────────────
 
     @PatchMapping("/api/v1/urls/{code}/restore")
     public ResponseEntity<ApiResponse<UrlResponse>> restoreUrl(@PathVariable String code) {
         return ResponseEntity.ok(ApiResponse.success(service.reactivateShortUrl(code), "URL restored successfully"));
     }
 
-    // ─── DELETE ───────────────────────────────────────────────────────────────
 
     @DeleteMapping("/api/v1/urls/{code}")
     public ResponseEntity<ApiResponse<Void>> deleteUrl(@PathVariable String code) {

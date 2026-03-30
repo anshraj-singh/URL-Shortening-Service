@@ -28,7 +28,6 @@ public class UrlShortenerService {
     private final UrlShortenerRepository repository;
     private final AppProperties appProperties;
 
-    // ─── CREATE ──────────────────────────────────────────────────────────────
 
     public UrlResponse createShortUrl(CreateUrlRequest request) {
         String normalised = normaliseUrl(request.getUrl());
@@ -48,7 +47,6 @@ public class UrlShortenerService {
         return UrlMapper.toResponse(saved, appProperties.getBaseUrl());
     }
 
-    // ─── REDIRECT ─────────────────────────────────────────────────────────────
 
     public String resolveUrl(String shortCode) {
         UrlShortener entity = findByCode(shortCode);
@@ -65,7 +63,6 @@ public class UrlShortenerService {
         return entity.getOriginalUrl();
     }
 
-    // ─── UPDATE ───────────────────────────────────────────────────────────────
 
     public UrlResponse updateShortUrl(String shortCode, UpdateUrlRequest request) {
         UrlShortener entity = findByCode(shortCode);
@@ -78,7 +75,6 @@ public class UrlShortenerService {
         return UrlMapper.toResponse(updated, appProperties.getBaseUrl());
     }
 
-    // ─── DELETE ───────────────────────────────────────────────────────────────
 
     public void deleteShortUrl(String shortCode) {
         UrlShortener entity = findByCode(shortCode);
@@ -93,8 +89,6 @@ public class UrlShortenerService {
         repository.delete(entity);
         log.info("Hard-deleted short URL '{}'", shortCode);
     }
-
-    // ─── READ ─────────────────────────────────────────────────────────────────
 
     public UrlResponse getStats(String shortCode) {
         return UrlMapper.toResponse(findByCode(shortCode), appProperties.getBaseUrl());
@@ -118,16 +112,12 @@ public class UrlShortenerService {
                 .collect(Collectors.toList());
     }
 
-    // ─── RESTORE ──────────────────────────────────────────────────────────────
-
     public UrlResponse reactivateShortUrl(String shortCode) {
         UrlShortener entity = findByCode(shortCode);
         entity.setActive(true);
         entity.setUpdatedAt(LocalDateTime.now());
         return UrlMapper.toResponse(repository.save(entity), appProperties.getBaseUrl());
     }
-
-    // ─── HELPERS ─────────────────────────────────────────────────────────────
 
     private UrlShortener findByCode(String shortCode) {
         return repository.findByShortCode(shortCode)
