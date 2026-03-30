@@ -4,7 +4,6 @@ import com.shorturl.urlshorteningservice.config.AppProperties;
 import com.shorturl.urlshorteningservice.dto.CreateUrlRequest;
 import com.shorturl.urlshorteningservice.dto.UpdateUrlRequest;
 import com.shorturl.urlshorteningservice.dto.UrlResponse;
-import com.shorturl.urlshorteningservice.exception.UrlNotFoundException;
 import com.shorturl.urlshorteningservice.model.UrlShortener;
 import com.shorturl.urlshorteningservice.repository.UrlShortenerRepository;
 import com.shorturl.urlshorteningservice.util.UrlMapper;
@@ -30,9 +29,11 @@ public class UrlShortenerService {
 
 
     public UrlResponse createShortUrl(CreateUrlRequest request) {
+
         String normalised = normaliseUrl(request.getUrl());
         String shortCode = generateUniqueShortCode();
 
+        //! make MongoDB document and save
         UrlShortener entity = UrlShortener.builder()
                 .originalUrl(normalised)
                 .shortCode(shortCode)
@@ -44,15 +45,22 @@ public class UrlShortenerService {
 
         UrlShortener saved = repository.save(entity);
         log.info("Created short URL: {} → {}", shortCode, normalised);
+
+        //! Response DTO return
         return UrlMapper.toResponse(saved, appProperties.getBaseUrl());
     }
 
 
     public String resolveUrl(String shortCode) {
-        UrlShortener entity = findByCode(shortCode);
+        UrlShortener entity = repository.findByShortCode(shortCode)
+                .orElseThrow(() -> {
+                    log.warn("Short code not found: {}", shortCode);
+                    return new RuntimeException("Short URL not found: " + shortCode);
+                });
 
         if (!entity.isActive()) {
-            throw new UrlNotFoundException(shortCode);
+            log.warn("Short code is deactivated: {}", shortCode);
+            throw new RuntimeException("Short URL is no longer active: " + shortCode);
         }
 
         entity.setAccessCount(entity.getAccessCount() + 1);
@@ -63,21 +71,27 @@ public class UrlShortenerService {
         return entity.getOriginalUrl();
     }
 
-
     public UrlResponse updateShortUrl(String shortCode, UpdateUrlRequest request) {
-        UrlShortener entity = findByCode(shortCode);
-
+        UrlShortener entity = repository.findByShortCode(shortCode)
+                .orElseThrow(() -> {
+                    log.warn("Update failed — short code not found: {}", shortCode);
+                    return new RuntimeException("Short URL not found: " + shortCode);
+                });
         entity.setOriginalUrl(normaliseUrl(request.getNewUrl()));
         entity.setUpdatedAt(LocalDateTime.now());
 
         UrlShortener updated = repository.save(entity);
-        log.info("Updated short URL '{}' → {}", shortCode, request.getNewUrl());
+        log.info("Updated '{}' → {}", shortCode, request.getNewUrl());
         return UrlMapper.toResponse(updated, appProperties.getBaseUrl());
     }
 
-
     public void deleteShortUrl(String shortCode) {
-        UrlShortener entity = findByCode(shortCode);
+        //! find Record
+        UrlShortener entity = repository.findByShortCode(shortCode)
+                .orElseThrow(() -> {
+                    log.warn("Delete failed — short code not found: {}", shortCode);
+                    return new RuntimeException("Short URL not found: " + shortCode);
+                });
         entity.setActive(false);
         entity.setUpdatedAt(LocalDateTime.now());
         repository.save(entity);
@@ -85,13 +99,25 @@ public class UrlShortenerService {
     }
 
     public void hardDeleteShortUrl(String shortCode) {
-        UrlShortener entity = findByCode(shortCode);
+        UrlShortener entity = repository.findByShortCode(shortCode)
+                .orElseThrow(() -> {
+                    log.warn("Hard delete failed — short code not found: {}", shortCode);
+                    return new RuntimeException("Short URL not found: " + shortCode);
+                });
+
+        // permanently remove from mongodb
         repository.delete(entity);
         log.info("Hard-deleted short URL '{}'", shortCode);
     }
 
     public UrlResponse getStats(String shortCode) {
-        return UrlMapper.toResponse(findByCode(shortCode), appProperties.getBaseUrl());
+        UrlShortener entity = repository.findByShortCode(shortCode)
+                .orElseThrow(() -> {
+                    log.warn("Stats not found for short code: {}", shortCode);
+                    return new RuntimeException("Short URL not found: " + shortCode);
+                });
+
+        return UrlMapper.toResponse(entity, appProperties.getBaseUrl());
     }
 
     public List<UrlResponse> getAllUrls() {
@@ -107,26 +133,25 @@ public class UrlShortenerService {
     }
 
     public List<UrlResponse> getTopUrls() {
+        // Top 10 most clicked active URLs
         return repository.findTop10ByActiveTrueOrderByAccessCountDesc().stream()
                 .map(e -> UrlMapper.toResponse(e, appProperties.getBaseUrl()))
                 .collect(Collectors.toList());
     }
 
     public UrlResponse reactivateShortUrl(String shortCode) {
-        UrlShortener entity = findByCode(shortCode);
+        UrlShortener entity = repository.findByShortCode(shortCode)
+                .orElseThrow(() -> {
+                    log.warn("Restore failed — short code not found: {}", shortCode);
+                    return new RuntimeException("Short URL not found: " + shortCode);
+                });
         entity.setActive(true);
         entity.setUpdatedAt(LocalDateTime.now());
         return UrlMapper.toResponse(repository.save(entity), appProperties.getBaseUrl());
     }
-
-    private UrlShortener findByCode(String shortCode) {
-        return repository.findByShortCode(shortCode)
-                .orElseThrow(() -> new UrlNotFoundException(shortCode));
-    }
-
     private String normaliseUrl(String url) {
         if (url == null || url.isBlank()) {
-            throw new IllegalArgumentException("URL must not be blank");
+            throw new RuntimeException("URL must not be blank");
         }
         url = url.trim();
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
