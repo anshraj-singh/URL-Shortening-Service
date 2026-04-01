@@ -14,6 +14,9 @@ public interface UrlShortenerRepository extends MongoRepository<UrlShortener, St
 
     boolean existsByShortCode(String shortCode);
 
+    //! Duplicate URL check
+    Optional<UrlShortener> findByOriginalUrlAndActiveTrue(String originalUrl);
+
     List<UrlShortener> findByActiveTrue();
 
     List<UrlShortener> findTop10ByActiveTrueOrderByAccessCountDesc();

@@ -49,6 +49,11 @@ public class UrlShortenerController {
         return ResponseEntity.ok(ApiResponse.success(service.getStats(code), "Stats fetched successfully"));
     }
 
+    @GetMapping("/api/v1/urls/{code}/preview")
+    public ResponseEntity<ApiResponse<UrlResponse>> previewUrl(@PathVariable String code) {
+        return ResponseEntity.ok(ApiResponse.success(service.previewUrl(code), "Preview fetched — no click counted"));
+    }
+
     @GetMapping("/api/v1/urls")
     public ResponseEntity<ApiResponse<List<UrlResponse>>> getAllUrls() {
         List<UrlResponse> list = service.getAllUrls();

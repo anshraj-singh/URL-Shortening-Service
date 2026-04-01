@@ -11,8 +11,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -31,6 +33,18 @@ public class UrlShortenerService {
     public UrlResponse createShortUrl(CreateUrlRequest request) {
 
         String normalised = normaliseUrl(request.getUrl());
+
+        //! to check URL format valid or not
+        validateUrlFormat(normalised);
+
+        //! Duplicate check
+        Optional<UrlShortener> existing = repository.findByOriginalUrlAndActiveTrue(normalised);
+        if (existing.isPresent()) {
+            log.info("Duplicate URL found — returning existing short code: {}", existing.get().getShortCode());
+            return UrlMapper.toResponse(existing.get(), appProperties.getBaseUrl());
+        }
+
+        //! Unique 6-char short code generate
         String shortCode = generateUniqueShortCode();
 
         //! make MongoDB document and save
@@ -71,13 +85,32 @@ public class UrlShortenerService {
         return entity.getOriginalUrl();
     }
 
+    public UrlResponse previewUrl(String shortCode) {
+        UrlShortener entity = repository.findByShortCode(shortCode)
+                .orElseThrow(() -> {
+                    log.warn("Preview failed — short code not found: {}", shortCode);
+                    return new RuntimeException("Short URL not found: " + shortCode);
+                });
+
+        if (!entity.isActive()) {
+            log.warn("Preview failed — short code is deactivated: {}", shortCode);
+            throw new RuntimeException("Short URL is no longer active: " + shortCode);
+        }
+
+        log.info("Preview requested for '{}'", shortCode);
+        return UrlMapper.toResponse(entity, appProperties.getBaseUrl());
+    }
+
     public UrlResponse updateShortUrl(String shortCode, UpdateUrlRequest request) {
         UrlShortener entity = repository.findByShortCode(shortCode)
                 .orElseThrow(() -> {
                     log.warn("Update failed — short code not found: {}", shortCode);
                     return new RuntimeException("Short URL not found: " + shortCode);
                 });
-        entity.setOriginalUrl(normaliseUrl(request.getNewUrl()));
+        String normalised = normaliseUrl(request.getNewUrl());
+        validateUrlFormat(normalised);
+
+        entity.setOriginalUrl(normalised);
         entity.setUpdatedAt(LocalDateTime.now());
 
         UrlShortener updated = repository.save(entity);
@@ -133,7 +166,6 @@ public class UrlShortenerService {
     }
 
     public List<UrlResponse> getTopUrls() {
-        // Top 10 most clicked active URLs
         return repository.findTop10ByActiveTrueOrderByAccessCountDesc().stream()
                 .map(e -> UrlMapper.toResponse(e, appProperties.getBaseUrl()))
                 .collect(Collectors.toList());
@@ -158,6 +190,16 @@ public class UrlShortenerService {
             url = "https://" + url;
         }
         return url;
+    }
+
+    private void validateUrlFormat(String url) {
+        try {
+            new URL(url).toURI();
+            log.debug("URL format valid: {}", url);
+        } catch (Exception e) {
+            log.warn("Invalid URL format: {}", url);
+            throw new RuntimeException("Invalid URL format: " + url);
+        }
     }
 
     private String generateUniqueShortCode() {
