@@ -194,8 +194,20 @@ public class UrlShortenerService {
 
     private void validateUrlFormat(String url) {
         try {
-            new URL(url).toURI();
+            URL parsedUrl = new URL(url);
+            String host = parsedUrl.getHost();
+            if (host == null || host.isBlank()) {
+                throw new RuntimeException("Invalid URL — host is missing: " + url);
+            }
+            if (!host.contains(".")) {
+                throw new RuntimeException("Invalid URL — domain must have a dot like google.com: " + url);
+            }
+            if (!host.matches("^[a-zA-Z0-9.\\-]+$")) {
+                throw new RuntimeException("Invalid URL — domain has invalid characters: " + url);
+            }
             log.debug("URL format valid: {}", url);
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             log.warn("Invalid URL format: {}", url);
             throw new RuntimeException("Invalid URL format: " + url);
