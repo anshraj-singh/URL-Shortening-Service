@@ -66,6 +66,8 @@ public class UrlShortener {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    private String userId;
+
     private int accessCount;
     private boolean active;
 }

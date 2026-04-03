@@ -5,6 +5,7 @@ import com.shorturl.urlshorteningservice.dto.CreateUrlRequest;
 import com.shorturl.urlshorteningservice.dto.UpdateUrlRequest;
 import com.shorturl.urlshorteningservice.dto.UrlResponse;
 import com.shorturl.urlshorteningservice.model.UrlShortener;
+import com.shorturl.urlshorteningservice.model.User;
 import com.shorturl.urlshorteningservice.repository.UrlShortenerRepository;
 import com.shorturl.urlshorteningservice.util.UrlMapper;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.net.URL;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -37,10 +40,12 @@ public class UrlShortenerService {
         //! to check URL format valid or not
         validateUrlFormat(normalised);
 
+        String userId = getCurrentUserId();
+
         //! Duplicate check
-        Optional<UrlShortener> existing = repository.findByOriginalUrlAndActiveTrue(normalised);
+        Optional<UrlShortener> existing = repository.findByOriginalUrlAndActiveTrueAndUserId(normalised, userId);
         if (existing.isPresent()) {
-            log.info("Duplicate URL found — returning existing short code: {}", existing.get().getShortCode());
+            log.info("Duplicate URL found for user {} — returning existing: {}", userId, existing.get().getShortCode());
             return UrlMapper.toResponse(existing.get(), appProperties.getBaseUrl());
         }
 
@@ -51,6 +56,7 @@ public class UrlShortenerService {
         UrlShortener entity = UrlShortener.builder()
                 .originalUrl(normalised)
                 .shortCode(shortCode)
+                .userId(userId)
                 .accessCount(0)
                 .active(true)
                 .createdAt(LocalDateTime.now())
@@ -58,7 +64,7 @@ public class UrlShortenerService {
                 .build();
 
         UrlShortener saved = repository.save(entity);
-        log.info("Created short URL: {} → {}", shortCode, normalised);
+        log.info("Created short URL: {} → {} by user {}", shortCode, normalised, userId);
 
         //! Response DTO return
         return UrlMapper.toResponse(saved, appProperties.getBaseUrl());
@@ -212,6 +218,15 @@ public class UrlShortenerService {
             log.warn("Invalid URL format: {}", url);
             throw new RuntimeException("Invalid URL format: " + url);
         }
+    }
+
+    private String getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof User) {
+            User user = (User) auth.getPrincipal();
+            return user.getId();
+        }
+        throw new RuntimeException("User not authenticated");
     }
 
     private String generateUniqueShortCode() {
