@@ -12,8 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.List;
-
 
 @RestController
 @RequiredArgsConstructor
@@ -54,23 +52,6 @@ public class UrlShortenerController {
         return ResponseEntity.ok(ApiResponse.success(service.previewUrl(code), "Preview fetched — no click counted"));
     }
 
-    @GetMapping("/api/v1/urls")
-    public ResponseEntity<ApiResponse<List<UrlResponse>>> getAllUrls() {
-        List<UrlResponse> list = service.getAllUrls();
-        return ResponseEntity.ok(ApiResponse.success(list, "Fetched " + list.size() + " URL(s)"));
-    }
-
-    @GetMapping("/api/v1/urls/active")
-    public ResponseEntity<ApiResponse<List<UrlResponse>>> getActiveUrls() {
-        List<UrlResponse> list = service.getActiveUrls();
-        return ResponseEntity.ok(ApiResponse.success(list, "Fetched " + list.size() + " active URL(s)"));
-    }
-
-    @GetMapping("/api/v1/urls/top")
-    public ResponseEntity<ApiResponse<List<UrlResponse>>> getTopUrls() {
-        return ResponseEntity.ok(ApiResponse.success(service.getTopUrls(), "Top URLs fetched"));
-    }
-
     @PutMapping("/api/v1/urls/{code}")
     public ResponseEntity<ApiResponse<UrlResponse>> updateUrl(
             @PathVariable String code,
@@ -90,11 +71,5 @@ public class UrlShortenerController {
     public ResponseEntity<ApiResponse<Void>> deleteUrl(@PathVariable String code) {
         service.deleteShortUrl(code);
         return ResponseEntity.ok(ApiResponse.success(null, "URL deactivated successfully"));
-    }
-
-    @DeleteMapping("/api/v1/urls/{code}/hard")
-    public ResponseEntity<ApiResponse<Void>> hardDeleteUrl(@PathVariable String code) {
-        service.hardDeleteShortUrl(code);
-        return ResponseEntity.ok(ApiResponse.success(null, "URL permanently deleted"));
     }
 }
