@@ -4,6 +4,7 @@ import com.shorturl.urlshorteningservice.dto.ApiResponse;
 import com.shorturl.urlshorteningservice.dto.AuthResponse;
 import com.shorturl.urlshorteningservice.dto.LoginRequest;
 import com.shorturl.urlshorteningservice.dto.RegisterRequest;
+import com.shorturl.urlshorteningservice.dto.RegisterResponse;
 import com.shorturl.urlshorteningservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,9 +24,10 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthResponse>> register(
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(
             @RequestBody RegisterRequest request) {
-        AuthResponse response = userService.register(request);
+
+        RegisterResponse response = userService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Registration successful"));
     }

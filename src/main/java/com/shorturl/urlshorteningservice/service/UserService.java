@@ -3,6 +3,7 @@ package com.shorturl.urlshorteningservice.service;
 import com.shorturl.urlshorteningservice.dto.AuthResponse;
 import com.shorturl.urlshorteningservice.dto.LoginRequest;
 import com.shorturl.urlshorteningservice.dto.RegisterRequest;
+import com.shorturl.urlshorteningservice.dto.RegisterResponse;
 import com.shorturl.urlshorteningservice.model.User;
 import com.shorturl.urlshorteningservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,11 @@ public class UserService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public AuthResponse register(RegisterRequest request) {
+    public RegisterResponse register(RegisterRequest request) {
 
+        if (userRepository.existsByName(request.getName())) {
+            throw new RuntimeException("Name already taken: " + request.getName());
+        }
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already registered: " + request.getEmail());
         }
@@ -38,38 +42,33 @@ public class UserService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        userRepository.save(user);
-        log.info("New user registered: {}", request.getEmail());
+        User savedUser = userRepository.save(user);
+        log.info("New user registered: {}", request.getName());
 
-        String token = jwtService.generateToken(user);
-        return AuthResponse.builder()
-                .token(token)
-                .name(user.getName())
-                .email(user.getEmail())
-                .role(user.getRole())
+        return RegisterResponse.builder()
+                .id(savedUser.getId())
+                .name(savedUser.getName())
+                .email(savedUser.getEmail())
+                .role(savedUser.getRole())
+                .createdAt(savedUser.getCreatedAt())
+                .message("Account created successfully. Please login to get your token.")
                 .build();
     }
 
     public AuthResponse login(LoginRequest request) {
-
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
+                        request.getUser(),
                         request.getPassword()
                 )
         );
+        User user = userRepository.findByName(request.getUser())
+                .orElseThrow(() -> new RuntimeException("User not found: " + request.getUser()));
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found: " + request.getEmail()));
-
-        log.info("User logged in: {}", request.getEmail());
-
+        log.info("User logged in: {}", request.getUser());
         String token = jwtService.generateToken(user);
         return AuthResponse.builder()
                 .token(token)
-                .name(user.getName())
-                .email(user.getEmail())
-                .role(user.getRole())
                 .build();
     }
 }
