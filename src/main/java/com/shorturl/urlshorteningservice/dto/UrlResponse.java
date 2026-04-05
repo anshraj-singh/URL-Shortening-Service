@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class UrlResponse {
 
     private String id;
+    private String userId;
     private String originalUrl;
     private String shortUrl;
     private String shortCode;
@@ -18,4 +19,5 @@ public class UrlResponse {
     private LocalDateTime updatedAt;
     private int accessCount;
     private boolean active;
+    private boolean banned;
 }

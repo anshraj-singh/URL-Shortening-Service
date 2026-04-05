@@ -11,6 +11,7 @@ public class UrlMapper {
     public static UrlResponse toResponse(UrlShortener entity, String baseUrl) {
         return UrlResponse.builder()
                 .id(entity.getId())
+                .userId(entity.getUserId())
                 .originalUrl(entity.getOriginalUrl())
                 .shortUrl(baseUrl + "/r/" + entity.getShortCode())
                 .shortCode(entity.getShortCode())
@@ -18,6 +19,7 @@ public class UrlMapper {
                 .updatedAt(entity.getUpdatedAt())
                 .accessCount(entity.getAccessCount())
                 .active(entity.isActive())
+                .banned(entity.isBanned())
                 .build();
     }
 }

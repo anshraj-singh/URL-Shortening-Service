@@ -245,4 +245,50 @@ public class UrlShortenerService {
         } while (repository.existsByShortCode(code));
         return code;
     }
+
+    public org.springframework.data.domain.Page<UrlResponse> getAllUrlsPaginated(int page, int size) {
+        org.springframework.data.domain.Pageable pageable =
+                org.springframework.data.domain.PageRequest.of(page, size);
+        return repository.findAll(pageable)
+                .map(e -> UrlMapper.toResponse(e, appProperties.getBaseUrl()));
+    }
+
+    public int bulkDelete(List<String> shortCodes) {
+        List<UrlShortener> urls = repository.findByShortCodeIn(shortCodes);
+        if (urls.isEmpty()) {
+            throw new RuntimeException("No URLs found for given short codes");
+        }
+        urls.forEach(url -> {
+            url.setActive(false);
+            url.setUpdatedAt(LocalDateTime.now());
+        });
+        repository.saveAll(urls);
+        log.info("Admin bulk deleted {} URLs", urls.size());
+        return urls.size();
+    }
+
+    public List<UrlResponse> getFlaggedUrls() {
+        LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
+        return repository
+                .findByAccessCountGreaterThanAndLastAccessedAtAfter(10, oneMinuteAgo)
+                .stream()
+                .map(e -> UrlMapper.toResponse(e, appProperties.getBaseUrl()))
+                .collect(Collectors.toList());
+    }
+
+    public UrlResponse banUrl(String shortCode) {
+        UrlShortener entity = repository.findByShortCode(shortCode)
+                .orElseThrow(() -> {
+                    log.warn("Ban failed — short code not found: {}", shortCode);
+                    return new RuntimeException("Short URL not found: " + shortCode);
+                });
+
+        entity.setActive(false);
+        entity.setBanned(true);
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        UrlShortener saved = repository.save(entity);
+        log.info("Admin banned URL: {}", shortCode);
+        return UrlMapper.toResponse(saved, appProperties.getBaseUrl());
+    }
 }
