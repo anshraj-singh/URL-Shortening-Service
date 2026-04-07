@@ -12,26 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Admin Controller — /api/v1/admin/**
- * SecurityConfig mein hasRole("ADMIN") set hai.
- *
- * ┌──────────┬─────────────────────────────────────────┬──────────────────────────────────────┐
- * │ Method   │ Path                                    │ Purpose                              │
- * ├──────────┼─────────────────────────────────────────┼──────────────────────────────────────┤
- * │ GET      │ /api/v1/admin/urls?page=0&size=20       │ Saari URLs paginated                 │
- * │ GET      │ /api/v1/admin/urls/active               │ Active URLs                          │
- * │ GET      │ /api/v1/admin/urls/top                  │ Top 10 clicked                       │
- * │ GET      │ /api/v1/admin/urls/flagged              │ Suspicious URLs (spam detection)     │
- * │ GET      │ /api/v1/admin/urls/{code}               │ Kisi bhi URL ka detail               │
- * │ GET      │ /api/v1/admin/urls/{code}/stats         │ Kisi bhi URL ke stats                │
- * │ POST     │ /api/v1/admin/urls/{code}/ban           │ URL ban karo (redirect block)        │
- * │ PATCH    │ /api/v1/admin/urls/{code}/restore       │ URL restore karo                     │
- * │ DELETE   │ /api/v1/admin/urls/{code}               │ Soft delete                          │
- * │ DELETE   │ /api/v1/admin/urls/{code}/hard          │ Permanent delete                     │
- * │ DELETE   │ /api/v1/admin/urls/bulk                 │ Multiple URLs ek saath delete        │
- * └──────────┴─────────────────────────────────────────┴──────────────────────────────────────┘
- */
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
